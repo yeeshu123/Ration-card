@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ration Card Print </title>
+  <style>
+    :root {
+      --primary: #1e293b;
+      --primary-hover: #0f172a;
+      --accent: #2563eb; 
+      --border: #cbd5e1;
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --text: #334155;
+    }
+    * { box-sizing: border-box; outline: none; }
+    body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      font-family: "Segoe UI", "Noto Sans Devanagari", "Mangal", sans-serif;
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    h1 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--primary);
+    }
+    .status-bar { font-size: 0.85rem; color: var(--accent); font-weight: 500; }
+
+    .container {
+      display: grid;
+      grid-template-columns: 350px 1fr; 
+      height: calc(100vh - 50px);
+      overflow: hidden;
+    }
+
+    .sidebar {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #64748b;
+      margin-bottom: 4px;
+    }
+
+    /* Added 'select' to the styled inputs */
+    input[type="text"], textarea, input[type="file"], input[type="number"], select {
+      width: 100%;
+      padding: 8px 10px;
+      font-size: 0.9rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: #fff;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    textarea { min-height: 120px; resize: vertical; }
+    input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+
+    .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    button {
+      padding: 10px; font-size: 0.85rem; font-weight: 600; text-transform: uppercase;
+      cursor: pointer; border: 1px solid var(--primary); background: var(--primary);
+      color: white; border-radius: 4px; transition: all 0.2s;
+    }
+    button:hover { background: var(--primary-hover); }
+    button.secondary { background: white; color: var(--primary); border: 1px solid var(--border); }
+    button.secondary:hover { background: #f1f5f9; border-color: var(--primary); }
+
+    .preview-area {
+      background: #e2e8f0;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: auto;
+      position: relative;
+    }
+    canvas {
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      max-width: 100%;
+      max-height: 90vh;
+      background: white;
+      cursor: grab;
+    }
+    canvas:active { cursor: grabbing; }
+
+    /* Tools Section Styles */
+    .tools-section {
+      border-top: 2px dashed var(--border);
+      padding-top: 15px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Ration Card Automation</h1>
+    <span id="systemStatus" class="status-bar">Waiting for template selection...</span>
+  </header>
+
+  <div class="container">
+    <aside class="sidebar">
+      
+      <div class="form-group">
+        <label>1. Select Blank Template</label>
+        <select id="templateSelect">
+          <option value="">-- Choose a template --</option>
+          <option value="प्राथमिकता.jpeg">प्राथमिकता</option>
+          <option value="अंत्योदय.jpeg">अंत्योदय</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>2. Source Data (Paste Text)</label>
+        <textarea id="sourceText" placeholder="Paste the extracted OCR text here..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Caste Category</label>
+        <input type="text" id="casteInput" placeholder="e.g. SC / ST / OBC">
+      </div>
+
+      <div class="form-group">
+        <label>Address Correction (Optional)</label>
+        <textarea id="addressOverride" style="min-height: 60px;" placeholder="Override parsed address..."></textarea>
+      </div>
+
+      <div class="btn-group">
+        <button id="parseBtn">Fill Data</button>
+        <button id="downloadPngBtn" class="secondary">Download PNG</button>
+      </div>
+
+      <div class="tools-section">
+        <div class="form-group">
+          <label style="color:var(--primary); font-size:0.85rem;">Adjustment Tools</label>
+          <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 8px;">Click text on preview to select & drag</div>
+          
+          <div style="display: flex; align-items: center; justify-content: space-between; background:#f1f5f9; padding:8px; border-radius:4px; margin-bottom:10px;">
+            <span id="selectedLabel" style="font-size: 0.8rem; font-weight:600;">None Selected</span>
+            <div style="display:flex; align-items:center; gap:5px;">
+              <span style="font-size:0.75rem; font-weight:bold;">Size:</span>
+              <input type="number" id="fontSizeInput" disabled style="width: 60px; padding:4px;" title="Font Size">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <button id="exportConfigBtn" class="secondary" style="width:100%; font-size:0.75rem;">Get Updated Coordinates</button>
+          <textarea id="configOutput" style="min-height: 150px; display:none; margin-top:10px; font-family:monospace; font-size:11px; background:#1e293b; color:#a5b4fc;" readonly placeholder="Updated config will appear here..."></textarea>
+        </div>
+      </div>
+
+    </aside>
+
+    <main class="preview-area" id="previewContainer">
+      <canvas id="templateCanvas"></canvas>
+    </main>
+  </div>
+
+  <script>
+    /** CONFIGURATION **/
+    const MAPPING = {
+      // General Information
+      "ration_no": { "x": 2734.97, "y": 174.85, "fontSize": 33 },
+      "head_name": { "x": 2430, "y": 567.29, "fontSize": 35 },
+      "father_name": { "x": 2430, "y": 672.18, "fontSize": 35 },
+      "caste": { "x": 2430, "y": 777, "fontSize": 35 },
+      "address_full": { "x": 2418.82, "y": 928.09, "fontSize": 35 },
+      "family_category": { "x": 2422.54, "y": 1074.91, "fontSize": 35 },
+      "shop_line": { "x": 2430, "y": 1175.91, "fontSize": 35 },
+
+      // Member 1
+      "member1_serial":   { "x": 325,     "y": 450, "fontSize": 34 },
+      "member1_name":     { "x": 447.63,  "y": 450, "fontSize": 34 },
+      "member1_gender":   { "x": 702.72,  "y": 450, "fontSize": 34 },
+      "member1_age":      { "x": 855.99,  "y": 450, "fontSize": 34 },
+      "member1_relation": { "x": 1018.17, "y": 450, "fontSize": 34 },
+
+      // Member 2
+      "member2_serial":   { "x": 325,     "y": 550, "fontSize": 34 },
+      "member2_name":     { "x": 447.63,  "y": 550, "fontSize": 34 },
+      "member2_gender":   { "x": 702.72,  "y": 550, "fontSize": 34 },
+      "member2_age":      { "x": 855.99,  "y": 550, "fontSize": 34 },
+      "member2_relation": { "x": 1018.17, "y": 550, "fontSize": 34 },
+
+      // Member 3
+      "member3_serial":   { "x": 325,     "y": 650, "fontSize": 34 },
+      "member3_name":     { "x": 447.63,  "y": 650, "fontSize": 34 },
+      "member3_gender":   { "x": 702.72,  "y": 650, "fontSize": 34 },
+      "member3_age":      { "x": 855.99,  "y": 650, "fontSize": 34 },
+      "member3_relation": { "x": 1018.17, "y": 650, "fontSize": 34 },
+
+      // Member 4
+      "member4_serial":   { "x": 325,     "y": 750, "fontSize": 34 },
+      "member4_name":     { "x": 447.63,  "y": 750, "fontSize": 34 },
+      "member4_gender":   { "x": 702.72,  "y": 750, "fontSize": 34 },
+      "member4_age":      { "x": 855.99,  "y": 750, "fontSize": 34 },
+      "member4_relation": { "x": 1018.17, "y": 750, "fontSize": 34 },
+
+      // Member 5
+      "member5_serial":   { "x": 325,     "y": 850, "fontSize": 34 },
+      "member5_name":     { "x": 447.63,  "y": 850, "fontSize": 34 },
+      "member5_gender":   { "x": 702.72,  "y": 850, "fontSize": 34 },
+      "member5_age":      { "x": 855.99,  "y": 850, "fontSize": 34 },
+      "member5_relation": { "x": 1018.17, "y": 850, "fontSize": 34 },
+
+      // Member 6
+      "member6_serial":   { "x": 325,     "y": 950, "fontSize": 34 },
+      "member6_name":     { "x": 447.63,  "y": 950, "fontSize": 34 },
+      "member6_gender":   { "x": 702.72,  "y": 950, "fontSize": 34 },
+      "member6_age":      { "x": 855.99,  "y": 950, "fontSize": 34 },
+      "member6_relation": { "x": 1018.17, "y": 950, "fontSize": 34 },
+
+      // Member 7
+      "member7_serial":   { "x": 325,     "y": 1050, "fontSize": 34 },
+      "member7_name":     { "x": 447.63,  "y": 1050, "fontSize": 34 },
+      "member7_gender":   { "x": 702.72,  "y": 1050, "fontSize": 34 },
+      "member7_age":      { "x": 855.99,  "y": 1050, "fontSize": 34 },
+      "member7_relation": { "x": 1018.17, "y": 1050, "fontSize": 34 },
+
+      // Member 8
+      "member8_serial":   { "x": 325,     "y": 1150, "fontSize": 34 },
+      "member8_name":     { "x": 447.63,  "y": 1150, "fontSize": 34 },
+      "member8_gender":   { "x": 702.72,  "y": 1150, "fontSize": 34 },
+      "member8_age":      { "x": 855.99,  "y": 1150, "fontSize": 34 },
+      "member8_relation": { "x": 1018.17, "y": 1150, "fontSize": 34 },
+
+      // Member 9
+      "member9_serial":   { "x": 325,     "y": 1250, "fontSize": 34 },
+      "member9_name":     { "x": 447.63,  "y": 1250, "fontSize": 34 },
+      "member9_gender":   { "x": 702.72,  "y": 1250, "fontSize": 34 },
+      "member9_age":      { "x": 855.99,  "y": 1250, "fontSize": 34 },
+      "member9_relation": { "x": 1018.17, "y": 1250, "fontSize": 34 },
+
+      // Member 10
+      "member10_serial":  { "x": 325,     "y": 1350, "fontSize": 34 },
+      "member10_name":    { "x": 447.63,  "y": 1350, "fontSize": 34 },
+      "member10_gender":  { "x": 702.72,  "y": 1350, "fontSize": 34 },
+      "member10_age":     { "x": 855.99,  "y": 1350, "fontSize": 34 },
+      "member10_relation":{ "x": 1018.17, "y": 1350, "fontSize": 34 }
+    };
+
+    /** STATE **/
+    let templateImg = null;
+    let currentData = {};
+    const canvas = document.getElementById('templateCanvas');
+    const ctx = canvas.getContext('2d');
+    const statusEl = document.getElementById('systemStatus');
+    
+    // Interactive States
+    let selectedKey = null;
+    let isDragging = false;
+    let dragOffsetX = 0;
+    let dragOffsetY = 0;
+
+    /** INITIALIZATION (Updated for Dropdown) **/
+    document.getElementById('templateSelect').addEventListener('change', function(e) {
+      const src = e.target.value;
+      
+      // If user selects the default empty option
+      if (!src) {
+        templateImg = null;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        statusEl.textContent = "Waiting for template selection...";
+        return;
+      }
+      
+      statusEl.textContent = "Loading template...";
+      
+      const img = new Image();
+      img.onload = function() {
+        templateImg = img;
+        canvas.width = img.width;
+        canvas.height = img.height;
+        render();
+        statusEl.textContent = `Template loaded. Ready to parse.`;
+      }
+      img.onerror = function() {
+        alert(`Failed to load template image: ${src}. \n\nPlease ensure the file '${src}' is in the exact same folder as this HTML file.`);
+        statusEl.textContent = "Error loading template.";
+      }
+      // Set the source to the local filename
+      img.src = src;
+    });
+
+    /** PARSING LOGIC **/
+    function extractSingle(regex, text) {
+      const m = text.match(regex);
+      return m ? m[1].trim() : '';
+    }
+
+    function parseSource() {
+      const text = document.getElementById('sourceText').value;
+      if (!text) { alert("Please paste source text."); return; }
+      if (!templateImg) { alert("Please select a template first."); return; }
+      
+      const values = {};
+
+      values.ration_no = extractSingle(/नवीन\s*राशनकार्ड\s*क्र\.?\s*-\s*([0-9]+)/u, text);
+      values.father_name = extractSingle(/पिता\s*\/\s*पति\s*: ?([^\n]+)/u, text);
+      
+      const district = extractSingle(/जिला\s*: ?([^\n]+)/u, text);
+      const gpWard = extractSingle(/ग्राम\s*पंचायत\s*\/\s*वार्ड: ?([^\n]+)/u, text).replace(/\/$/, '').trim();
+      const revVillage = extractSingle(/राजस्‍व\s*ग्राम\s*का\s*नाम\s*: ?([^\n]+)/u, text);
+      const block = extractSingle(/नगरीय\s*निकाय\s*\/\s*विकासखंड\s*: ?\/?([^\n]+)/u, text);
+      
+      const addrParts = [];
+      if (district) addrParts.push('जिला ' + district);
+      if (block) addrParts.push('विकासखण्ड ' + block);
+      if (gpWard) addrParts.push('ग्राम पंचायत ' + gpWard);
+      if (revVillage) addrParts.push('ग्राम ' + revVillage);
+      values.address_full = addrParts.join(', ');
+
+      const schemeLine = extractSingle(/योजना\s*\(रंग\)\s*: ?([^\n]+)/u, text);
+      if (schemeLine && schemeLine.includes('प्राथमिकता')) values.family_category = 'प्राथमिकता';
+      else if (schemeLine) values.family_category = schemeLine.split('।')[0].trim();
+      else values.family_category = 'प्राथमिकता';
+
+      const shopRaw = extractSingle(/दुकान\s*: ?([^\n]+)/u, text);
+      const shopNum = shopRaw.match(/([0-9]+)/);
+      values.shop_line = shopNum ? ('दुकान क्रमांक - ' + shopNum[1]) : shopRaw;
+
+      const headIdx = text.indexOf('मुखिया');
+      if (headIdx !== -1) {
+        const rest = text.slice(headIdx).split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        if (rest.length >= 2) values.head_name = rest[1];
+      }
+
+      const memIdx = text.indexOf('सदस्य की जानकारी');
+      if (memIdx !== -1) {
+        const sub = text.slice(memIdx);
+        const lines = sub.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        const headerRow = lines.findIndex(l => l.includes('नाम') && l.includes('लिंग'));
+        if (headerRow !== -1) {
+          const dataLines = lines.slice(headerRow + 1);
+          let count = 1;
+          for (const line of dataLines) {
+            if(count > 10) break;
+            const m = line.match(/^(.+?)\s+(\d+)\s+(\S+)\s+(\S+)\s+(.+)$/u);
+            if (m) {
+              values['member'+count+'_serial'] = String(count);
+              values['member'+count+'_name'] = m[1].trim();
+              values['member'+count+'_age'] = m[2].trim();
+              values['member'+count+'_gender'] = m[3].trim();
+              values['member'+count+'_relation'] = m[4].trim();
+              count++;
+            }
+          }
+        }
+      }
+
+      currentData = values;
+      applyOverrides();
+      render();
+      statusEl.textContent = "Data parsed successfully. Click and drag text to edit positions.";
+    }
+
+    function applyOverrides() {
+      const caste = document.getElementById('casteInput').value.trim();
+      if(caste) currentData.caste = caste;
+      
+      const addr = document.getElementById('addressOverride').value;
+      if(addr && addr.trim()) currentData.address_full = addr;
+    }
+
+    /** RENDERING **/
+    function render(targetCtx = ctx) {
+      if (!templateImg) return;
+      
+      if (targetCtx === ctx) { 
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(templateImg, 0, 0);
+      } else {
+        targetCtx.drawImage(templateImg, 0, 0);
+      }
+
+      targetCtx.textBaseline = 'top';
+
+      for (const key in MAPPING) {
+        if (!currentData[key]) continue;
+        const cfg = MAPPING[key];
+        const val = currentData[key];
+        
+        targetCtx.font = `bold ${cfg.fontSize + 1}px "Arial Unicode MS", "Noto Sans Devanagari", "Mangal", sans-serif`;
+        targetCtx.fillStyle = '#000000'; 
+
+        // Draw Text
+        if (key === 'address_full') {
+          const lines = String(val).split(/\r?\n/);
+          const lineHeight = cfg.fontSize * 1.3;
+          lines.forEach((ln, idx) => {
+            targetCtx.fillText(ln, cfg.x, cfg.y + (idx * lineHeight));
+          });
+        } else {
+          targetCtx.fillText(val, cfg.x, cfg.y);
+        }
+
+        // Draw Selection Box (Only on UI canvas, not in PNG export)
+        if (key === selectedKey && targetCtx === ctx) {
+          targetCtx.strokeStyle = '#2563eb'; // Blue highlight
+          targetCtx.lineWidth = 3;
+          targetCtx.setLineDash([8, 8]);
+          
+          let boxWidth = 0;
+          let boxHeight = cfg.fontSize * 1.5;
+          
+          if (key === 'address_full') {
+              const lines = String(val).split(/\r?\n/);
+              boxHeight = (cfg.fontSize * 1.3) * lines.length;
+              lines.forEach(ln => {
+                  const w = targetCtx.measureText(ln).width;
+                  if (w > boxWidth) boxWidth = w;
+              });
+          } else {
+              boxWidth = targetCtx.measureText(val).width;
+          }
+
+          targetCtx.strokeRect(cfg.x - 4, cfg.y - 4, boxWidth + 8, boxHeight + 8);
+          targetCtx.setLineDash([]); // Reset
+        }
+      }
+    }
+
+    /** INTERACTIVITY (DRAG & DROP / FONT SIZE) **/
+    const fontSizeInput = document.getElementById('fontSizeInput');
+    const selectedLabel = document.getElementById('selectedLabel');
+    
+    // Scale mouse coordinates to internal canvas resolution
+    function getMousePos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      return {
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top) * scaleY
+      };
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+      if (!templateImg || Object.keys(currentData).length === 0) return;
+      
+      const pos = getMousePos(e);
+      let foundKey = null;
+
+      // Loop over active data to find if clicked inside bounding box
+      const keys = Object.keys(currentData).filter(k => currentData[k] && MAPPING[k]);
+      
+      for (let i = keys.length - 1; i >= 0; i--) {
+        const key = keys[i];
+        const cfg = MAPPING[key];
+        const val = currentData[key];
+        
+        ctx.font = `bold ${cfg.fontSize + 1}px "Arial Unicode MS", "Noto Sans Devanagari", "Mangal", sans-serif`;
+        let textWidth = 0;
+        let textHeight = cfg.fontSize * 1.5;
+
+        if (key === 'address_full') {
+            const lines = String(val).split(/\r?\n/);
+            textHeight = (cfg.fontSize * 1.3) * lines.length;
+            lines.forEach(ln => {
+                const w = ctx.measureText(ln).width;
+                if (w > textWidth) textWidth = w;
+            });
+        } else {
+            textWidth = ctx.measureText(val).width;
+        }
+
+        // Hit Detection Padding
+        const padding = 10; 
+        if (pos.x >= cfg.x - padding && pos.x <= cfg.x + textWidth + padding &&
+            pos.y >= cfg.y - padding && pos.y <= cfg.y + textHeight + padding) {
+          foundKey = key;
+          break; // Grab the topmost item
+        }
+      }
+
+      selectedKey = foundKey;
+
+      if (selectedKey) {
+        isDragging = true;
+        dragOffsetX = pos.x - MAPPING[selectedKey].x;
+        dragOffsetY = pos.y - MAPPING[selectedKey].y;
+        
+        // Update Sidebar UI
+        selectedLabel.textContent = selectedKey;
+        selectedLabel.style.color = "var(--accent)";
+        fontSizeInput.value = MAPPING[selectedKey].fontSize;
+        fontSizeInput.disabled = false;
+      } else {
+        // Deselect
+        selectedLabel.textContent = "None Selected";
+        selectedLabel.style.color = "inherit";
+        fontSizeInput.value = "";
+        fontSizeInput.disabled = true;
+      }
+
+      render();
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      if (isDragging && selectedKey) {
+        const pos = getMousePos(e);
+        MAPPING[selectedKey].x = pos.x - dragOffsetX;
+        MAPPING[selectedKey].y = pos.y - dragOffsetY;
+        render(); // Re-render at new coordinates
+      }
+    });
+
+    window.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
+
+    // Update Font Size
+    fontSizeInput.addEventListener('input', (e) => {
+      if (selectedKey && MAPPING[selectedKey]) {
+        const val = parseInt(e.target.value);
+        if (val > 0) {
+          MAPPING[selectedKey].fontSize = val;
+          render();
+        }
+      }
+    });
+
+    /** EXPORT CONFIG **/
+    document.getElementById('exportConfigBtn').addEventListener('click', () => {
+      let outputStr = "const MAPPING = {\n";
+      for (const key in MAPPING) {
+        const cfg = MAPPING[key];
+        outputStr += `  "${key}": { "x": ${Math.round(cfg.x * 100)/100}, "y": ${Math.round(cfg.y * 100)/100}, "fontSize": ${cfg.fontSize} },\n`;
+      }
+      outputStr += "};\n";
+      
+      const configOut = document.getElementById('configOutput');
+      configOut.value = outputStr;
+      configOut.style.display = 'block';
+      configOut.select(); 
+      statusEl.textContent = "Configuration exported! Copy from text box below.";
+    });
+
+
+    /** EVENTS **/
+    document.getElementById('parseBtn').addEventListener('click', parseSource);
+    document.getElementById('casteInput').addEventListener('input', () => { applyOverrides(); render(); });
+    document.getElementById('addressOverride').addEventListener('input', () => { applyOverrides(); render(); });
+
+    // DOWNLOAD
+    document.getElementById('downloadPngBtn').addEventListener('click', () => {
+      if (!templateImg) { alert("Please select a template first."); return; }
+      
+      const exportCanvas = document.createElement('canvas');
+      exportCanvas.width = templateImg.width;
+      exportCanvas.height = templateImg.height;
+      const exportCtx = exportCanvas.getContext('2d');
+      
+      render(exportCtx);
+      
+      try {
+        const link = document.createElement('a');
+        link.download = 'ration_card_filled.png';
+        link.href = exportCanvas.toDataURL('image/png');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (e) {
+        alert("Download failed.");
+        console.error(e);
+      }
+    });
+  </script>
+</body>
+</html>
