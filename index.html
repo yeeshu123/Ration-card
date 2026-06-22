@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ration Card</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --border: #e2e8f0;
+      --bg: #f1f5f9;
+      --surface: #ffffff;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --radius: 8px;
+    }
+    
+    * { box-sizing: border-box; outline: none; margin: 0; padding: 0; }
+    
+    body {
+      background: var(--bg);
+      font-family: 'Inter', "Segoe UI", "Noto Sans Devanagari", sans-serif;
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      z-index: 10;
+    }
+    
+    h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: -0.025em;
+    }
+    
+    .status-bar { 
+      font-size: 0.875rem; 
+      color: var(--primary); 
+      font-weight: 600; 
+      background: #eff6ff;
+      padding: 6px 12px;
+      border-radius: 20px;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: 380px 1fr; 
+      height: calc(100vh - 65px);
+    }
+
+    .sidebar {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      box-shadow: 2px 0 8px rgba(0,0,0,0.02);
+      z-index: 5;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    input[type="text"], textarea, input[type="file"], input[type="number"], select {
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 0.95rem;
+      border: 1px solid #cbd5e1;
+      border-radius: var(--radius);
+      background: #fff;
+      font-family: inherit;
+      color: var(--text);
+      transition: all 0.2s ease;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    }
+    
+    textarea { min-height: 100px; resize: vertical; line-height: 1.5; }
+    
+    input:focus, textarea:focus, select:focus { 
+      border-color: var(--primary); 
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); 
+    }
+
+    .hidden { display: none !important; }
+
+    .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 5px; }
+    
+    button {
+      padding: 12px; 
+      font-size: 0.9rem; 
+      font-weight: 600; 
+      cursor: pointer; 
+      border: none; 
+      background: var(--primary);
+      color: white; 
+      border-radius: var(--radius); 
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+    }
+    
+    button:hover { 
+      background: var(--primary-hover); 
+      transform: translateY(-1px);
+      box-shadow: 0 4px 6px rgba(37, 99, 235, 0.25);
+    }
+    
+    button.secondary { 
+      background: white; 
+      color: var(--text); 
+      border: 1px solid #cbd5e1; 
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05); 
+    }
+    
+    button.secondary:hover { 
+      background: #f8fafc; 
+      border-color: #94a3b8; 
+    }
+
+    .preview-area {
+      background: #e2e8f0;
+      padding: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: auto;
+      position: relative;
+      background-image: radial-gradient(#cbd5e1 1px, transparent 0);
+      background-size: 20px 20px;
+    }
+    
+    canvas {
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+      max-width: 100%;
+      max-height: 85vh;
+      background: white;
+      border-radius: 4px;
+      cursor: grab;
+      transition: transform 0.1s;
+    }
+    canvas:active { cursor: grabbing; }
+
+    .tools-section {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-top: 10px;
+    }
+    
+    .tools-section label { color: var(--primary); }
+    
+    .active-tool-hud {
+      display: flex; 
+      align-items: center; 
+      justify-content: space-between; 
+      background: #fff; 
+      padding: 10px 14px; 
+      border: 1px solid var(--border);
+      border-radius: 6px; 
+      margin-bottom: 12px;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
+    }
+    
+    .active-tool-hud span { font-size: 0.85rem; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Ration Card </h1>
+    <span id="systemStatus" class="status-bar">Waiting for template selection...</span>
+  </header>
+
+
+  <div class="container">
+    <aside class="sidebar">
+
+      <div class="form-group">
+        <label>Paste Source Text</label>
+        <textarea id="sourceText" placeholder="#paste the text here"></textarea>
+      </div>
+      
+
+      <div class="btn-group">
+        <button id="parseBtn">Fill Data</button>
+        <button id="downloadPngBtn" class="secondary">Download PNG</button>
+      </div>
+
+      
+      <div class="form-group">
+        <label>Card Type</label>
+        <select id="cardTypeSelect">
+          <option value="प्राथमिकता">प्राथमिकता</option>
+          <option value="अन्त्योदय">अन्त्योदय</option>
+          <option value="एपीएल (सामान्य परिवार)">एपीएल (सामान्य परिवार)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Caste Category</label>
+        <select id="casteSelect">
+          <option value="अन्य पिछड़ा वर्ग">अन्य पिछड़ा वर्ग</option>
+          <option value="अनुसूचित जाति">अनुसूचित जाति</option>
+          <option value="अनुसूचित जनजाति">अनुसूचित जनजाति</option>
+          <option value="other">Other (Type custom)</option>
+        </select>
+        <input type="text" id="casteOtherInput" class="hidden" placeholder="Type custom caste here...">
+      </div>
+
+      <div class="form-group">
+        <label>Gram Panchayat / Ward</label>
+        <input type="text" id="gpInput" placeholder="Leave empty to use default (मोपका)">
+      </div>
+
+      
+
+      <div class="tools-section">
+        <div class="form-group">
+          <label>Adjustment Tools</label>
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px;">Click text on preview to select & drag</div>
+          
+          <div class="active-tool-hud">
+            <span id="selectedLabel">None Selected</span>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:0.8rem; color:var(--text-muted);">Size:</span>
+              <input type="number" id="fontSizeInput" disabled style="width: 70px; padding:6px; text-align:center;" title="Font Size">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <button id="exportConfigBtn" class="secondary" style="width:100%;">Get Updated Coordinates</button>
+          <textarea id="configOutput" class="hidden" style="min-height: 120px; margin-top:10px; font-family:monospace; font-size:11px; background:#1e293b; color:#a5b4fc;" readonly></textarea>
+        </div>
+      </div>
+
+    </aside>
+
+    <main class="preview-area" id="previewContainer">
+      <canvas id="templateCanvas"></canvas>
+    </main>
+  </div>
+
+  <script>
+    /** CONFIGURATION **/
+    const MAPPING = {
+      // General Information
+      "ration_no": { "x": 2734.97, "y": 174.85, "fontSize": 33 },
+      "head_name": { "x": 2430, "y": 567.29, "fontSize": 35 },
+      "father_name": { "x": 2430, "y": 672.18, "fontSize": 35 },
+      "caste": { "x": 2430, "y": 777, "fontSize": 35 },
+      "address_full": { "x": 2418.82, "y": 928.09, "fontSize": 35 },
+      
+      // Restored original Family Category coordinate
+      "family_category": { "x": 2422.54, "y": 1074.91, "fontSize": 35 },
+
+      "gram_panchayat": { "x": 2430, "y": 1175.91, "fontSize": 35 },
+      "shop_line": { "x": 2430, "y": 1250, "fontSize": 35 },
+      
+      // New distinct mapping for the large Category indicator at the bottom
+      "card_type_large": { "x": 2430, "y": 2152.22, "fontSize": 50 },
+
+      // Member 1
+      "member1_serial":   { "x": 325,     "y": 450, "fontSize": 34 },
+      "member1_name":     { "x": 447.63,  "y": 450, "fontSize": 34 },
+      "member1_gender":   { "x": 702.72,  "y": 450, "fontSize": 34 },
+      "member1_age":      { "x": 855.99,  "y": 450, "fontSize": 34 },
+      "member1_relation": { "x": 1018.17, "y": 450, "fontSize": 34 },
+
+      // Member 2
+      "member2_serial":   { "x": 325,     "y": 550, "fontSize": 34 },
+      "member2_name":     { "x": 447.63,  "y": 550, "fontSize": 34 },
+      "member2_gender":   { "x": 702.72,  "y": 550, "fontSize": 34 },
+      "member2_age":      { "x": 855.99,  "y": 550, "fontSize": 34 },
+      "member2_relation": { "x": 1018.17, "y": 550, "fontSize": 34 },
+
+      // Member 3
+      "member3_serial":   { "x": 325,     "y": 650, "fontSize": 34 },
+      "member3_name":     { "x": 447.63,  "y": 650, "fontSize": 34 },
+      "member3_gender":   { "x": 702.72,  "y": 650, "fontSize": 34 },
+      "member3_age":      { "x": 855.99,  "y": 650, "fontSize": 34 },
+      "member3_relation": { "x": 1018.17, "y": 650, "fontSize": 34 },
+
+      // Member 4
+      "member4_serial":   { "x": 325,     "y": 750, "fontSize": 34 },
+      "member4_name":     { "x": 447.63,  "y": 750, "fontSize": 34 },
+      "member4_gender":   { "x": 702.72,  "y": 750, "fontSize": 34 },
+      "member4_age":      { "x": 855.99,  "y": 750, "fontSize": 34 },
+      "member4_relation": { "x": 1018.17, "y": 750, "fontSize": 34 },
+
+      // Member 5
+      "member5_serial":   { "x": 325,     "y": 850, "fontSize": 34 },
+      "member5_name":     { "x": 447.63,  "y": 850, "fontSize": 34 },
+      "member5_gender":   { "x": 702.72,  "y": 850, "fontSize": 34 },
+      "member5_age":      { "x": 855.99,  "y": 850, "fontSize": 34 },
+      "member5_relation": { "x": 1018.17, "y": 850, "fontSize": 34 },
+
+      // Member 6
+      "member6_serial":   { "x": 325,     "y": 950, "fontSize": 34 },
+      "member6_name":     { "x": 447.63,  "y": 950, "fontSize": 34 },
+      "member6_gender":   { "x": 702.72,  "y": 950, "fontSize": 34 },
+      "member6_age":      { "x": 855.99,  "y": 950, "fontSize": 34 },
+      "member6_relation": { "x": 1018.17, "y": 950, "fontSize": 34 },
+
+      // Member 7
+      "member7_serial":   { "x": 325,     "y": 1050, "fontSize": 34 },
+      "member7_name":     { "x": 447.63,  "y": 1050, "fontSize": 34 },
+      "member7_gender":   { "x": 702.72,  "y": 1050, "fontSize": 34 },
+      "member7_age":      { "x": 855.99,  "y": 1050, "fontSize": 34 },
+      "member7_relation": { "x": 1018.17, "y": 1050, "fontSize": 34 },
+
+      // Member 8
+      "member8_serial":   { "x": 325,     "y": 1150, "fontSize": 34 },
+      "member8_name":     { "x": 447.63,  "y": 1150, "fontSize": 34 },
+      "member8_gender":   { "x": 702.72,  "y": 1150, "fontSize": 34 },
+      "member8_age":      { "x": 855.99,  "y": 1150, "fontSize": 34 },
+      "member8_relation": { "x": 1018.17, "y": 1150, "fontSize": 34 },
+
+      // Member 9
+      "member9_serial":   { "x": 325,     "y": 1250, "fontSize": 34 },
+      "member9_name":     { "x": 447.63,  "y": 1250, "fontSize": 34 },
+      "member9_gender":   { "x": 702.72,  "y": 1250, "fontSize": 34 },
+      "member9_age":      { "x": 855.99,  "y": 1250, "fontSize": 34 },
+      "member9_relation": { "x": 1018.17, "y": 1250, "fontSize": 34 },
+
+      // Member 10
+      "member10_serial":  { "x": 325,     "y": 1350, "fontSize": 34 },
+      "member10_name":    { "x": 447.63,  "y": 1350, "fontSize": 34 },
+      "member10_gender":  { "x": 702.72,  "y": 1350, "fontSize": 34 },
+      "member10_age":     { "x": 855.99,  "y": 1350, "fontSize": 34 },
+      "member10_relation":{ "x": 1018.17, "y": 1350, "fontSize": 34 }
+    };
+
+    /** STATE **/
+    let templateImg = null;
+    let currentData = {};
+    const canvas = document.getElementById('templateCanvas');
+    const ctx = canvas.getContext('2d');
+    const statusEl = document.getElementById('systemStatus');
+    
+    // Interactive States
+    let selectedKey = null;
+    let isDragging = false;
+    let dragOffsetX = 0;
+    let dragOffsetY = 0;
+
+    /** INITIALIZATION (Auto-Load Local Template) **/
+    // IMPORTANT: Change this string to the exact name of your image file in the folder!
+const DEFAULT_TEMPLATE_FILE = "template.jpeg"; 
+
+window.addEventListener('DOMContentLoaded', () => {
+  statusEl.textContent = "Loading local template...";
+  
+  const img = new Image();
+  img.onload = function() {
+    templateImg = img;
+    canvas.width = img.width;
+    canvas.height = img.height;
+    render();
+    statusEl.textContent = `Template loaded. Ready to parse.`;
+  };
+  img.onerror = function() {
+    statusEl.textContent = "Error: Template not found.";
+    alert(`Could not find '${DEFAULT_TEMPLATE_FILE}'. \n\nPlease ensure the image file is named exactly like this and is in the exact same folder as your HTML file.`);
+  };
+  
+  // Set the source to the local file path
+  img.src = DEFAULT_TEMPLATE_FILE;
+});
+
+    /** CASTE DROPDOWN LOGIC **/
+    const casteSelect = document.getElementById('casteSelect');
+    const casteOtherInput = document.getElementById('casteOtherInput');
+    casteSelect.addEventListener('change', function() {
+      if(this.value === 'other') {
+        casteOtherInput.classList.remove('hidden');
+      } else {
+        casteOtherInput.classList.add('hidden');
+      }
+      applyOverrides();
+      render();
+    });
+
+    /** PARSING LOGIC **/
+    function extractSingle(regex, text) {
+      const m = text.match(regex);
+      return m ? m[1].trim() : '';
+    }
+
+    function parseSource() {
+      const text = document.getElementById('sourceText').value;
+      if (!text) { alert("Please paste source text."); return; }
+      if (!templateImg) { alert("Please select a base template image first."); return; }
+      
+      const values = {};
+
+      values.ration_no = extractSingle(/नवीन\s*राशनकार्ड\s*क्र\.?\s*-\s*([0-9]+)/u, text);
+      values.father_name = extractSingle(/पिता\s*\/\s*पति\s*: ?([^\n]+)/u, text);
+      
+      const district = extractSingle(/जिला\s*: ?([^\n]+)/u, text);
+      const gpWard = extractSingle(/ग्राम\s*पंचायत\s*\/\s*वार्ड: ?([^\n]+)/u, text).replace(/\/$/, '').trim();
+      const revVillage = extractSingle(/राजस्‍व\s*ग्राम\s*का\s*नाम\s*: ?([^\n]+)/u, text);
+      const block = extractSingle(/नगरीय\s*निकाय\s*\/\s*विकासखंड\s*: ?\/?([^\n]+)/u, text);
+      
+      // Address Formulation & 60/40 Split Logic
+      const addrParts = [];
+      if (district) addrParts.push('जिला ' + district);
+      if (block) addrParts.push('विकासखण्ड ' + block);
+      if (gpWard) addrParts.push('ग्राम पंचायत ' + gpWard);
+      if (revVillage) addrParts.push('ग्राम ' + revVillage);
+      
+      const fullAddressString = addrParts.join(', ');
+      const addrWords = fullAddressString.split(' ');
+      
+      if (addrWords.length > 1) {
+          const splitIndex = Math.ceil(addrWords.length * 0.60);
+          const line1 = addrWords.slice(0, splitIndex).join(' ');
+          const line2 = addrWords.slice(splitIndex).join(' ');
+          values.address_full = line1 + '\n' + line2;
+      } else {
+          values.address_full = fullAddressString;
+      }
+
+      const shopRaw = extractSingle(/दुकान\s*: ?([^\n]+)/u, text);
+      const shopNum = shopRaw.match(/([0-9]+)/);
+      values.shop_line = shopNum ? ('दुकान क्रमांक - ' + shopNum[1]) : shopRaw;
+
+      // Card Type Logic - Extract & Update Dropdown
+      let rawType = '';
+      const schemeLine = extractSingle(/योजना\s*\(रंग\)\s*: ?([^\n]+)/u, text);
+      if (schemeLine) {
+        rawType = schemeLine;
+      }
+      
+      const cardTypeSelect = document.getElementById('cardTypeSelect');
+      if (rawType.includes('प्राथमिकता')) {
+          cardTypeSelect.value = "प्राथमिकता";
+      } else if (rawType.includes('अन्त्योदय') || rawType.includes('अंत्योदय')) {
+          cardTypeSelect.value = "अन्त्योदय";
+      } else if (rawType.includes('एपीएल') || rawType.includes('सामान्य')) {
+          cardTypeSelect.value = "एपीएल (सामान्य परिवार)";
+      } else {
+          cardTypeSelect.value = "प्राथमिकता"; // Default fallback
+      }
+
+      const headIdx = text.indexOf('मुखिया');
+      if (headIdx !== -1) {
+        const rest = text.slice(headIdx).split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        if (rest.length >= 2) values.head_name = rest[1];
+      }
+
+      const memIdx = text.indexOf('सदस्य की जानकारी');
+      if (memIdx !== -1) {
+        const sub = text.slice(memIdx);
+        const lines = sub.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        const headerRow = lines.findIndex(l => l.includes('नाम') && l.includes('लिंग'));
+        if (headerRow !== -1) {
+          const dataLines = lines.slice(headerRow + 1);
+          let count = 1;
+          for (const line of dataLines) {
+            if(count > 10) break;
+            const m = line.match(/^(.+?)\s+(\d+)\s+(\S+)\s+(\S+)\s+(.+)$/u);
+            if (m) {
+              values['member'+count+'_serial'] = String(count);
+              values['member'+count+'_name'] = m[1].trim();
+              values['member'+count+'_age'] = m[2].trim();
+              values['member'+count+'_gender'] = m[3].trim();
+              values['member'+count+'_relation'] = m[4].trim();
+              count++;
+            }
+          }
+        }
+      }
+
+      currentData = values;
+      applyOverrides();
+      render();
+      statusEl.textContent = "Data parsed successfully. Click and drag text to edit positions.";
+    }
+
+    function applyOverrides() {
+      // 1. Caste Override
+      const casteVal = casteSelect.value;
+      if (casteVal === 'other') {
+          const customCaste = casteOtherInput.value.trim();
+          if(customCaste) currentData.caste = customCaste;
+      } else {
+          currentData.caste = casteVal;
+      }
+
+      // 2. Family Category Selection (Maps to BOTH original position and large bottom position)
+      const selectedType = document.getElementById('cardTypeSelect').value;
+      currentData.family_category = selectedType;
+      currentData.card_type_large = selectedType;
+
+      // 3. Gram Panchayat Overlay
+      const gpOverride = document.getElementById('gpInput').value.trim();
+      const finalGpName = gpOverride ? gpOverride : "मोपका";
+      currentData.gram_panchayat = "ग्राम पंचायत/वार्ड - " + finalGpName;
+    }
+
+    /** EVENT LISTENERS FOR LIVE UPDATE **/
+    document.getElementById('casteOtherInput').addEventListener('input', () => { applyOverrides(); render(); });
+    document.getElementById('cardTypeSelect').addEventListener('change', () => { applyOverrides(); render(); });
+    document.getElementById('gpInput').addEventListener('input', () => { applyOverrides(); render(); });
+
+    /** RENDERING **/
+    function render(targetCtx = ctx) {
+      if (!templateImg) return;
+      
+      if (targetCtx === ctx) { 
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(templateImg, 0, 0);
+      } else {
+        targetCtx.drawImage(templateImg, 0, 0);
+      }
+
+      targetCtx.textBaseline = 'top';
+
+      for (const key in MAPPING) {
+        if (!currentData[key]) continue;
+        const cfg = MAPPING[key];
+        const val = currentData[key];
+        
+        targetCtx.font = `bold ${cfg.fontSize + 1}px "Arial Unicode MS", "Noto Sans Devanagari", "Mangal", sans-serif`;
+        targetCtx.fillStyle = '#000000'; 
+
+        // Draw Text (Support for multi-line like address_full)
+        if (key === 'address_full') {
+          const lines = String(val).split(/\r?\n/);
+          const lineHeight = cfg.fontSize * 1.3;
+          lines.forEach((ln, idx) => {
+            targetCtx.fillText(ln, cfg.x, cfg.y + (idx * lineHeight));
+          });
+        } else {
+          targetCtx.fillText(val, cfg.x, cfg.y);
+        }
+
+        // Draw Selection Box (Only on UI canvas, not in PNG export)
+        if (key === selectedKey && targetCtx === ctx) {
+          targetCtx.strokeStyle = '#2563eb'; // Blue highlight
+          targetCtx.lineWidth = 3;
+          targetCtx.setLineDash([8, 8]);
+          
+          let boxWidth = 0;
+          let boxHeight = cfg.fontSize * 1.5;
+          
+          if (key === 'address_full') {
+              const lines = String(val).split(/\r?\n/);
+              boxHeight = (cfg.fontSize * 1.3) * lines.length;
+              lines.forEach(ln => {
+                  const w = targetCtx.measureText(ln).width;
+                  if (w > boxWidth) boxWidth = w;
+              });
+          } else {
+              boxWidth = targetCtx.measureText(val).width;
+          }
+
+          targetCtx.strokeRect(cfg.x - 4, cfg.y - 4, boxWidth + 8, boxHeight + 8);
+          targetCtx.setLineDash([]); // Reset
+        }
+      }
+    }
+
+    /** INTERACTIVITY (DRAG & DROP / FONT SIZE) **/
+    const fontSizeInput = document.getElementById('fontSizeInput');
+    const selectedLabel = document.getElementById('selectedLabel');
+    
+    function getMousePos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      return {
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top) * scaleY
+      };
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+      if (!templateImg || Object.keys(currentData).length === 0) return;
+      
+      const pos = getMousePos(e);
+      let foundKey = null;
+
+      const keys = Object.keys(currentData).filter(k => currentData[k] && MAPPING[k]);
+      
+      for (let i = keys.length - 1; i >= 0; i--) {
+        const key = keys[i];
+        const cfg = MAPPING[key];
+        const val = currentData[key];
+        
+        ctx.font = `bold ${cfg.fontSize + 1}px "Arial Unicode MS", "Noto Sans Devanagari", "Mangal", sans-serif`;
+        let textWidth = 0;
+        let textHeight = cfg.fontSize * 1.5;
+
+        if (key === 'address_full') {
+            const lines = String(val).split(/\r?\n/);
+            textHeight = (cfg.fontSize * 1.3) * lines.length;
+            lines.forEach(ln => {
+                const w = ctx.measureText(ln).width;
+                if (w > textWidth) textWidth = w;
+            });
+        } else {
+            textWidth = ctx.measureText(val).width;
+        }
+
+        const padding = 10; 
+        if (pos.x >= cfg.x - padding && pos.x <= cfg.x + textWidth + padding &&
+            pos.y >= cfg.y - padding && pos.y <= cfg.y + textHeight + padding) {
+          foundKey = key;
+          break;
+        }
+      }
+
+      selectedKey = foundKey;
+
+      if (selectedKey) {
+        isDragging = true;
+        dragOffsetX = pos.x - MAPPING[selectedKey].x;
+        dragOffsetY = pos.y - MAPPING[selectedKey].y;
+        
+        selectedLabel.textContent = selectedKey;
+        selectedLabel.style.color = "var(--primary)";
+        fontSizeInput.value = MAPPING[selectedKey].fontSize;
+        fontSizeInput.disabled = false;
+      } else {
+        selectedLabel.textContent = "None Selected";
+        selectedLabel.style.color = "inherit";
+        fontSizeInput.value = "";
+        fontSizeInput.disabled = true;
+      }
+
+      render();
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      if (isDragging && selectedKey) {
+        const pos = getMousePos(e);
+        MAPPING[selectedKey].x = pos.x - dragOffsetX;
+        MAPPING[selectedKey].y = pos.y - dragOffsetY;
+        render(); 
+      }
+    });
+
+    window.addEventListener('mouseup', () => { isDragging = false; });
+
+    fontSizeInput.addEventListener('input', (e) => {
+      if (selectedKey && MAPPING[selectedKey]) {
+        const val = parseInt(e.target.value);
+        if (val > 0) {
+          MAPPING[selectedKey].fontSize = val;
+          render();
+        }
+      }
+    });
+
+    /** EXPORT CONFIG **/
+    document.getElementById('exportConfigBtn').addEventListener('click', () => {
+      let outputStr = "const MAPPING = {\n";
+      for (const key in MAPPING) {
+        const cfg = MAPPING[key];
+        outputStr += `  "${key}": { "x": ${Math.round(cfg.x * 100)/100}, "y": ${Math.round(cfg.y * 100)/100}, "fontSize": ${cfg.fontSize} },\n`;
+      }
+      outputStr += "};\n";
+      
+      const configOut = document.getElementById('configOutput');
+      configOut.value = outputStr;
+      configOut.classList.remove('hidden');
+      configOut.select(); 
+      statusEl.textContent = "Configuration exported!";
+    });
+
+    /** PRIMARY BUTTONS **/
+    document.getElementById('parseBtn').addEventListener('click', parseSource);
+
+    document.getElementById('downloadPngBtn').addEventListener('click', () => {
+      if (!templateImg) { alert("Please select a template first."); return; }
+      
+      const exportCanvas = document.createElement('canvas');
+      exportCanvas.width = templateImg.width;
+      exportCanvas.height = templateImg.height;
+      const exportCtx = exportCanvas.getContext('2d');
+      
+      render(exportCtx); // Render onto export canvas without selection lines
+      
+      try {
+        const link = document.createElement('a');
+        link.download = 'ration_card_filled.png';
+        link.href = exportCanvas.toDataURL('image/png');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (e) {
+        alert("Download failed.");
+        console.error(e);
+      }
+    });
+  </script>
+</body>
+</html>
