@@ -517,7 +517,7 @@ window.addEventListener('DOMContentLoaded', () => {
       // 2. Family Category Selection (Maps to BOTH original position and large bottom position)
       const selectedType = document.getElementById('cardTypeSelect').value;
       currentData.family_category = selectedType;
-      currentData.card_type_large = selectedType;
+      currentData.card_type_large = selectedType + " कार्ड";
 
       // 3. Gram Panchayat Overlay
       const gpOverride = document.getElementById('gpInput').value.trim();
